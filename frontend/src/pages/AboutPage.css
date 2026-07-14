@@ -1,0 +1,293 @@
+/* ==========================================================================
+   CodeInsight AI — About Page styles
+   Extends the tokens and component classes defined in HomePage.css.
+   No new colors are introduced; every value below reuses --ci-* variables.
+   ========================================================================== */
+
+/* ---------- Intro ---------- */
+
+.ci-about-hero {
+  padding: 64px 24px 24px;
+}
+
+.ci-about-hero__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.ci-about-hero__title {
+  font-size: clamp(28px, 3.8vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.ci-about-hero__desc {
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--ci-text-muted);
+  margin: 0;
+}
+
+/* ---------- Overview / Mission split ---------- */
+
+.ci-grid--split {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ci-split-card {
+  background: var(--ci-card);
+  border: 1px solid var(--ci-card-border);
+  border-radius: var(--ci-radius-md);
+  box-shadow: var(--ci-shadow-card);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ci-split-card__index {
+  font-family: var(--ci-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ci-purple);
+}
+
+.ci-split-card__title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.ci-split-card__body {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ci-text-muted);
+  margin: 0;
+}
+
+/* ---------- Architecture flow ---------- */
+
+.ci-arch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  background: var(--ci-card);
+  border: 1px solid var(--ci-card-border);
+  border-radius: var(--ci-radius-lg);
+  box-shadow: var(--ci-shadow-card);
+  padding: 36px 28px;
+}
+
+.ci-arch__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  width: 168px;
+  padding: 18px 14px;
+  border-radius: var(--ci-radius-md);
+  background: var(--ci-bg-raised);
+  border: 1px solid var(--ci-card-border);
+}
+
+.ci-arch__num {
+  font-family: var(--ci-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ci-blue);
+  margin-bottom: 4px;
+}
+
+.ci-arch__label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ci-arch__detail {
+  font-size: 12px;
+  color: var(--ci-text-faint);
+  line-height: 1.4;
+}
+
+.ci-arch__connector {
+  width: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ci-arch__connector svg {
+  width: 36px;
+  height: 22px;
+}
+
+/* ---------- Tech stack ---------- */
+
+.ci-grid--stack {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.ci-stack-card {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ci-stack-card__role {
+  font-family: var(--ci-font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ci-text-faint);
+}
+
+.ci-stack-card__name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ci-stack-card__note {
+  font-size: 12.5px;
+  color: var(--ci-text-muted);
+}
+
+/* ---------- Future improvements ---------- */
+
+.ci-future-list {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ci-future-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--ci-card);
+  border: 1px solid var(--ci-card-border);
+  border-radius: var(--ci-radius-sm);
+  padding: 14px 16px;
+  font-size: 14.5px;
+  color: var(--ci-text);
+  line-height: 1.5;
+}
+
+.ci-future-list__check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--ci-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+/* ---------- Developer info ---------- */
+
+.ci-dev-card {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  background: var(--ci-card);
+  border: 1px solid var(--ci-card-border);
+  border-radius: var(--ci-radius-lg);
+  box-shadow: var(--ci-shadow-card);
+  padding: 28px;
+}
+
+.ci-dev-card__avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ci-font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: var(--ci-gradient);
+}
+
+.ci-dev-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ci-dev-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.ci-dev-card__desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ci-text-muted);
+  margin: 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 980px) {
+  .ci-grid--split {
+    grid-template-columns: 1fr;
+  }
+
+  .ci-grid--stack {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ci-arch {
+    flex-direction: column;
+  }
+
+  .ci-arch__connector svg {
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 620px) {
+  .ci-grid--stack {
+    grid-template-columns: 1fr;
+  }
+
+  .ci-dev-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .ci-dev-card__body {
+    align-items: center;
+  }
+}
