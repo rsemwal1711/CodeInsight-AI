@@ -1195,7 +1195,7 @@
     /* Badges no longer fit three-across on the code preview — collapse to a
       simple stacked column below the code instead of floating over it */
     .ci-preview__body {
-      padding: 14px 5px 14px;
+      padding: 14px 0px;
     }
 
     .ci-badge {
