@@ -1,64 +1,63 @@
-// /**
-//  * CodeInsight AI — analysis API (Node/Express).
-//  *
-//  * Run locally:
-//  *   npm install
-//  *   node server.js
-//  *
-//  * Then point the frontend at http://localhost:8000
-//  * (see API_BASE_URL in AnalyzePage.jsx).
-//  */
-
-// const express = require("express");
-// const cors = require("cors");
-// const { analyze } = require("./analyzers/treesitteranalyzer");
-
-// const app = express();
-// app.use(cors()); // tighten this to your frontend's origin before deploying
-// app.use(express.json({ limit: "1mb" }));
-
-// const LANGUAGE_LABELS = { javascript: "JavaScript", python: "Python", java: "Java", cpp: "C++" };
-
-// app.post("/api/analyze", (req, res) => {
-//   const { code, language } = req.body || {};
-
-//   if (!language || !LANGUAGE_LABELS[language]) {
-//     return res.status(400).json({ error: `Unsupported language: ${language}` });
-//   }
-//   if (!code || !code.trim()) {
-//     return res.status(400).json({ error: "No code provided." });
-//   }
-
-//   try {
-//     const result = analyze(code, language);
-//     return res.json({
-//       detectedLanguage: LANGUAGE_LABELS[language],
-//       ...result,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ error: "Analysis failed on the server." });
-//   }
-// });
-
-// app.get("/health", (_req, res) => res.json({ status: "ok" }));
-
-// const PORT = process.env.PORT || 8000;
-// app.listen(PORT, () => console.log(`CodeInsight AI API running on http://localhost:${PORT}`));
-
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const fs = require("fs/promises");
+const os = require("os");
+const path = require("path");
+const crypto = require("crypto");
+const { spawn } = require("child_process");
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+function runProcess(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd,
+      shell: false,
+      windowsHide: true,
+    });
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      callback(value);
+    };
+    const timer = setTimeout(() => {
+      child.kill();
+      finish(resolve, { timedOut: true, stdout, stderr });
+    }, options.timeoutMs || 2000);
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+      if (stdout.length > 100000) child.kill();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+      if (stderr.length > 100000) child.kill();
+    });
+    child.on("error", (error) => finish(reject, error));
+    child.on("close", (exitCode) => finish(resolve, { exitCode, stdout, stderr }));
+  });
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const SYSTEM_PROMPT = `You are an expert software engineer. Analyze the following source code.
+const MODE_GUIDANCE = {
+  interview: "Focus on Big-O notation, recursive depth, loop nesting, edge cases, and the strongest algorithmic trade-offs.",
+  clean: "Focus on readability, variable naming, modularity, duplication, and maintainable structure while still preserving behavior.",
+  security: "Focus strictly on syntax risks, edge-case crashes, input validation gaps, unsafe assumptions, and common security issues like injection, path traversal, unchecked input, and null/empty handling."
+};
+
+function getSystemPrompt(mode = "interview") {
+  const selectedMode = MODE_GUIDANCE[mode] || MODE_GUIDANCE.interview;
+
+  return `You are an expert software engineer. Analyze the following source code.
 Return ONLY valid JSON, with no markdown formatting, no code fences, and no preamble or explanation outside the JSON.
 The JSON must match exactly this shape:
 {
@@ -72,15 +71,87 @@ The JSON must match exactly this shape:
   "performanceComparison": "",
   "explanation": [],
   "confidence": "",
-  "optimizedCode": ""
+  "optimizedCode": "",
+  "testCases": [
+    {
+      "input": "",
+      "expectedBehavior": "",
+      "reason": ""
+    }
+  ]
 }
+
+Mode guidance: ${selectedMode}
 
 Rules for "explanation": return an array of 2-4 short bullet points (each under 15 words), covering only the most important takeaways — what the algorithm does, why it has this complexity, and the single biggest thing to improve. Do NOT write a paragraph.
 
-Rules for "optimizedCode": if a more efficient version of the algorithm exists, rewrite the full code with that optimization applied, in the same language as the input. Keep it complete and runnable, not a snippet. If the code is already optimal, return an empty string "".`;
+Rules for "optimizedCode": if a more efficient version of the algorithm exists, rewrite the full code with that optimization applied, in the same language as the input. Keep it complete and runnable, not a snippet. If the code is already optimal, return an empty string "".
+
+Rules for "testCases": return 3-6 concrete, safe edge-case inputs the user can run manually. Cover relevant cases such as empty input, null input, zero, negative values, duplicates, already sorted data, or very large input when applicable. Use valid JSON strings for input, and briefly explain why each case matters.`;
+}
+
+app.post("/api/run-java", async (req, res) => {
+  if (process.env.NODE_ENV === "production" || process.env.ALLOW_LOCAL_CODE_EXECUTION !== "true") {
+    return res.status(403).json({
+      error: "Java execution is available only on an explicitly enabled local backend.",
+    });
+  }
+
+  const { code, input = "" } = req.body || {};
+  if (!code || typeof code !== "string" || code.length > 100000) {
+    return res.status(400).json({ error: "Java source is required and must be under 100 KB." });
+  }
+  if (typeof input !== "string" || input.length > 10000) {
+    return res.status(400).json({ error: "Test input must be text under 10 KB." });
+  }
+  if (/\bpackage\s+[A-Za-z0-9_.]+\s*;/.test(code)) {
+    return res.status(400).json({ error: "Remove the package declaration before running a local test." });
+  }
+  if (!/\bstatic\s+void\s+main\s*\(/.test(code)) {
+    return res.status(400).json({
+      error: "Java test execution requires a public static void main(String[] args) method that reads stdin.",
+    });
+  }
+
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "codeinsight-java-"));
+  const sourcePath = path.join(workDir, "Main.java");
+
+  try {
+    const source = code.replace(/\bpublic\s+class\s+[A-Za-z_$][\w$]*/, "public class Main");
+    await fs.writeFile(sourcePath, source, "utf8");
+
+    const compile = await runProcess("javac", ["-encoding", "UTF-8", "-d", workDir, sourcePath], {
+      cwd: workDir,
+      timeoutMs: 5000,
+    });
+    if (compile.timedOut || compile.exitCode !== 0) {
+      return res.status(422).json({ error: compile.timedOut ? "Java compilation timed out." : compile.stderr || "Java compilation failed." });
+    }
+
+    const execution = await runProcess("java", ["-cp", workDir, "Main"], {
+      cwd: workDir,
+      timeoutMs: 2000,
+    });
+    if (execution.timedOut) {
+      return res.status(408).json({ error: "Java execution timed out after 2 seconds." });
+    }
+    if (execution.exitCode !== 0) {
+      return res.status(422).json({ error: execution.stderr || "Java program exited with an error.", output: execution.stdout });
+    }
+    return res.json({ output: execution.stdout });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return res.status(503).json({ error: "Java/JDK is not installed or is not available on the backend PATH." });
+    }
+    console.error("Local Java execution error:", error.message || error);
+    return res.status(500).json({ error: "Unable to run the local Java test." });
+  } finally {
+    await fs.rm(workDir, { recursive: true, force: true });
+  }
+});
 
 app.post("/api/analyze", async (req, res) => {
-  const { code, language } = req.body || {};
+  const { code, language, mode } = req.body || {};
 
   if (!code || typeof code !== "string" || !code.trim()) {
     return res.status(400).json({ error: "No code provided" });
@@ -88,9 +159,10 @@ app.post("/api/analyze", async (req, res) => {
 
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const systemPrompt = getSystemPrompt(mode);
 
     const result = await model.generateContent([
-      { text: SYSTEM_PROMPT },
+      { text: systemPrompt },
       { text: code },
     ]);
 

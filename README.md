@@ -76,7 +76,7 @@ Create a `.env` file inside `backend/` (see [Environment Variables](#-environmen
 node server.js
 ```
 
-By default, the backend runs on `http://localhost:8000`.
+The deployed backend is available at `https://codeinsight-ai-dnou.onrender.com`.
 
 ### 3. Set up the frontend
 
@@ -90,7 +90,7 @@ npm install
 Create a `.env` file inside `frontend/` with your API base URL:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=https://codeinsight-ai-dnou.onrender.com
 ```
 
 Then start the dev server:
@@ -99,7 +99,7 @@ Then start the dev server:
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173` (or whichever port Vite assigns).
+The app will be available on the Vite development server (or whichever port Vite assigns).
 
 ---
 
@@ -117,7 +117,7 @@ PORT=8000
 **`frontend/.env`**
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=https://codeinsight-ai-dnou.onrender.com
 ```
 
 > ⚠️ Never commit real `.env` files. This repo's `.gitignore` already excludes them — if you're forking or setting this up fresh, double check `.env` isn't tracked before pushing.

@@ -93,7 +93,6 @@ const Hero = () => (
     </div>
   </section>
 );
-
 const FEATURES = [
   {
     title: "Multi-Language Support",
