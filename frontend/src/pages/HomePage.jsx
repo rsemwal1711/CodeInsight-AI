@@ -1,5 +1,6 @@
 import NavBar from "../components/Header";
 import Footer from "../components/Footer";
+import { Link } from "react-router-dom";
 
 /* ---------- Reusable bits ---------- */
 
@@ -75,12 +76,13 @@ const Hero = () => (
           complexity, syntax errors, and optimization suggestions.
         </p>
         <div className="ci-hero__actions">
-          <a href="/analyze" className="ci-btn ci-btn--primary">
+          <Link to="/analyze" className="ci-btn ci-btn--primary">
             Start Analyzing
-          </a>
-          <a href="/examples" className="ci-btn ci-btn--ghost">
+          </Link>
+
+          <Link to="/examples" className="ci-btn ci-btn--ghost">
             View Examples
-          </a>
+          </Link>
         </div>
         <div className="ci-hero__langs" aria-label="Supported languages">
           <span>Universal Language Support</span>
