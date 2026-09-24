@@ -949,8 +949,15 @@ const badgeTone = (value) => {
   return "error";
 };
 
-const ResultCard = ({ icon, title, children, delay = 0, tone }) => (
-  <section className={`ci-result-card${tone ? ` ci-result-card--${tone}` : ""}`} style={{ animationDelay: `${delay}ms` }}>
+const resultSectionId = (title) =>
+  `analysis-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
+
+const ResultCard = ({ icon, title, children, delay = 0, tone, id }) => (
+  <section
+    id={id || resultSectionId(title)}
+    className={`ci-result-card${tone ? ` ci-result-card--${tone}` : ""}`}
+    style={{ animationDelay: `${delay}ms` }}
+  >
     <header className="ci-result-card__head">
       <span className="ci-result-card__icon">{icon}</span>
       <h3 className="ci-result-card__title">{title}</h3>
@@ -1181,12 +1188,34 @@ const EmptyState = () => (
   </div>
 );
 
-const LoadingState = () => (
-  <div className="ci-loading-state">
-    <span className="ci-spinner" aria-hidden="true" />
-    <p>Analyzing your code&hellip;</p>
-  </div>
-);
+const ANALYSIS_PROGRESS_MESSAGES = [
+  "Reading your code structure…",
+  "Tracing loops and function calls…",
+  "Calculating time and space complexity…",
+  "Checking for syntax and security issues…",
+  "Preparing optimization suggestions…",
+];
+
+const LoadingState = () => {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setMessageIndex((current) => (current + 1) % ANALYSIS_PROGRESS_MESSAGES.length);
+    }, 1400);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="ci-loading-state" role="status" aria-live="polite">
+      <span className="ci-spinner" aria-hidden="true" />
+      <p key={messageIndex} className="ci-loading-state__message">
+        {ANALYSIS_PROGRESS_MESSAGES[messageIndex]}
+      </p>
+      <span className="ci-loading-state__hint">This can take a few seconds for larger snippets.</span>
+    </div>
+  );
+};
 
 const ErrorState = ({ message, onRetry }) => (
   <div className="ci-empty-state ci-empty-state--error">
@@ -1369,6 +1398,7 @@ export default function AnalyzePage() {
   const [reportPreviewOpen, setReportPreviewOpen] = useState(false);
   const [status, setStatus] = useState("idle"); // idle | loading | done | error
   const [results, setResults] = useState(null);
+  const [resultsNavOpen, setResultsNavOpen] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [notice, setNotice] = useState("");
   const sharedPendingRef = useRef(false);
@@ -1840,7 +1870,67 @@ useEffect(() => {
             {status === "error" && <ErrorState message={errorMsg} onRetry={handleAnalyze} />}
 
             {status === "done" && results && (
-              <div className="ci-results__list">
+              <div className="ci-results-layout">
+                {resultsNavOpen ? (
+                  <aside className="ci-results-nav" aria-label="Analysis sections">
+                    <button
+                      type="button"
+                      className="ci-results-nav__close"
+                      onClick={() => setResultsNavOpen(false)}
+                      aria-label="Hide analysis navigation"
+                      title="Hide navigation"
+                    >
+                      <span aria-hidden="true">−</span>
+                      <b>Hide navigation</b>
+                    </button>
+                    {[
+                      ["Detected Language", "⌘", true],
+                      ["Time Complexity", "◷", true],
+                      ["Space Complexity", "◇", true],
+                      ["Interactive Complexity Graph", "⌁", true],
+                      ["Syntax Errors", "!", true],
+                      ["Suggested Test Cases", "✓", true],
+                      ["Complexity Hotspots", "⌖", hotspotMap.length > 0],
+                      ["Optimization Suggestions", "✦", true],
+                      ["AI Explanation", "?", true],
+                      ["Code Comparison", "⇄", Boolean(results.optimizedCode)],
+                      ["Optimized Code", "</>", Boolean(results.optimizedCode)],
+                      ["Performance Comparison", "↗", Boolean(results.optimizedCode)],
+                    ]
+                      .filter(([, , visible]) => visible)
+                      .map(([label, icon]) => {
+                        const id = resultSectionId(label);
+                        return (
+                          <a key={id} href={`#${id}`} className="ci-results-nav__link" title={label} aria-label={label}>
+                            <span aria-hidden="true">{icon}</span>
+                            <b>{label}</b>
+                          </a>
+                        );
+                      })}
+                    <button
+                      type="button"
+                      className="ci-results-nav__top"
+                      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                      title="Back to top"
+                      aria-label="Back to top"
+                    >
+                      <span aria-hidden="true">↑</span>
+                      <b>Back to top</b>
+                    </button>
+                  </aside>
+                ) : (
+                  <button
+                    type="button"
+                    className="ci-results-nav__reopen"
+                    onClick={() => setResultsNavOpen(true)}
+                    aria-label="Show analysis navigation"
+                    title="Show analysis navigation"
+                  >
+                    ☰
+                  </button>
+                )}
+
+                <div className="ci-results__list">
                 <ResultCard
                   delay={0}
                   title="Detected Language"
@@ -2073,6 +2163,7 @@ useEffect(() => {
                     </p>
                   </div>
                 </ResultCard>
+                </div>
               </div>
             )}
           </div>
